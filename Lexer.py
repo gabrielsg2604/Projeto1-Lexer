@@ -77,7 +77,48 @@ class LexerError(Exception):
 
 class Lexer:
     """Converte texto-fonte MicroC em uma sequência de tokens."""
+    # tabela de palavras reservadas da linguagem
+    PALAVRAS_RESERVADAS = {
+        "int": TokenKind.KW_INT,
+        "bool": TokenKind.KW_BOOL,
+        "void": TokenKind.KW_VOID,
+        "true": TokenKind.KW_TRUE,
+        "false": TokenKind.KW_FALSE,
+        "if": TokenKind.KW_IF,
+        "else": TokenKind.KW_ELSE,
+        "while": TokenKind.KW_WHILE,
+        "return": TokenKind.KW_RETURN,
+        "print": TokenKind.KW_PRINT,
+    }
 
+    # símbolos que sempre formam um token sozinhos (1 caractere)
+    SIMBOLOS_SIMPLES = {
+        "+": TokenKind.PLUS,
+        "-": TokenKind.MINUS,
+        "*": TokenKind.STAR,
+        "/": TokenKind.SLASH,
+        "%": TokenKind.PERCENT,
+        "(": TokenKind.LEFT_PAREN,
+        ")": TokenKind.RIGHT_PAREN,
+        "{": TokenKind.LEFT_BRACE,
+        "}": TokenKind.RIGHT_BRACE,
+        ",": TokenKind.COMMA,
+        ";": TokenKind.SEMICOLON,
+        ">": TokenKind.GREATER,
+        "<": TokenKind.LESS,
+        "!": TokenKind.LOGICAL_NOT,
+        "=": TokenKind.ASSIGN,
+    }
+    
+    SIMBOLOS_COMPOSTOS = {
+        "==": TokenKind.EQUAL_EQUAL,
+        "!=": TokenKind.NOT_EQUAL,
+        "<=": TokenKind.LESS_EQUAL,
+        ">=": TokenKind.GREATER_EQUAL,
+        "&&": TokenKind.LOGICAL_AND,
+        "||": TokenKind.LOGICAL_OR,
+    }
+    
     def __init__(self, source: str):
         self.source = source
         # TODO: inicialize aqui o estado exigido por sua estratégia.
