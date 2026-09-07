@@ -227,7 +227,7 @@ class Lexer:
                 yield Token(kind, current, None, line_start, column_start)
                 continue
 
-            raise LexerError(f"caractere invalido {current!r}", line_start, column_start)
+            raise LexerError(f"Caracter inválido {current!r}", line_start, column_start)
         
     #     
     def scan_ascii(self, char: str) -> bool:
@@ -271,7 +271,7 @@ class Lexer:
         while True:
             if self.position >= len(self.source):
                 # EOF antes de fechar: posicao reportada e a da aspa de abertura
-                raise LexerError("string nao terminada", line_start, column_start)
+                raise LexerError("String nao finalizada", line_start, column_start)
 
             char = self.peek()
 
@@ -281,10 +281,10 @@ class Lexer:
 
             if char == "\n":
                 # quebra de linha dentro de string: posicao e a da propria quebra
-                raise LexerError("quebra de linha em string", self.line, self.column)
+                raise LexerError("Quebra de linha", self.line, self.column)
 
             if not char.isascii():
-                raise LexerError(f"caractere invalido {char!r}", self.line, self.column)
+                raise LexerError(f"Caractere inválido {char!r}", self.line, self.column)
 
             if char == "\\":
                 backslash_line = self.line
@@ -292,7 +292,7 @@ class Lexer:
                 self.advance()
 
                 if self.position >= len(self.source):
-                    raise LexerError("string nao terminada", line_start, column_start)
+                    raise LexerError("String nao finalizada", line_start, column_start)
 
                 escape_char = self.peek()
                 if escape_char == "n":
@@ -306,7 +306,7 @@ class Lexer:
                 else:
                     # posicao do erro de escape invalido e a da propria barra
                     raise LexerError(
-                        "sequencia de escape invalida", backslash_line, backslash_column
+                        "Sequencia inválida", backslash_line, backslash_column
                     )
                 self.advance()
                 continue
