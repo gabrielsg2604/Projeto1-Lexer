@@ -150,6 +150,41 @@ class Lexer:
             self.column += 1
         return char
     
+    # Função para pular espaços, quebras e comentários
+    def skip_space_comments(self) -> None:
+        while not self.position >= len(self.source):
+            char = self.peek()
+
+            if char in (" ", "\t", "\n"):
+                self.advance()
+                continue
+
+            if char == "/" and self.peek_next() == "/":
+                self.advance()
+                self.advance()
+                while not self.position >= len(self.source) and self.peek() != "\n":
+                    self.advance()
+                continue
+
+            if char == "/" and self.peek_next() == "*":
+                start_line = self.line
+                start_column = self.column
+                self.advance()
+                self.advance()
+                while not (self.peek() == "*" and self.peek_next() == "/"):
+                    if self.position >= len(self.source):
+                        raise LexerError(
+                            "Comentário não finalizado.",
+                            start_line,
+                            start_column,
+                        )
+                    self.advance()
+                self.advance()
+                self.advance()
+                continue
+
+            break
+    
     def tokens(self) -> Iterator[Token]:
         """Produza todos os tokens significativos e um único EOF ao final."""
         raise NotImplementedError("implemente o analisador léxico")
