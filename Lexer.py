@@ -77,7 +77,7 @@ class LexerError(Exception):
 
 class Lexer:
     """Converte texto-fonte MicroC em uma sequência de tokens."""
-    # tabela de palavras reservadas da linguagem
+    # Tabela de palavras reservadas da linguagem
     KEYWORDS = {
         "int": TokenKind.KW_INT,
         "bool": TokenKind.KW_BOOL,
@@ -91,7 +91,7 @@ class Lexer:
         "print": TokenKind.KW_PRINT,
     }
 
-    # símbolos que sempre formam um token sozinhos (1 caractere)
+    # Símbolos que sempre formam um token sozinhos (1 caractere)
     SIMPLE_SYMBOLS = {
         "+": TokenKind.PLUS,
         "-": TokenKind.MINUS,
@@ -110,6 +110,7 @@ class Lexer:
         "=": TokenKind.ASSIGN,
     }
     
+    # símbolos que sempre formam um token composto (2 caracteres)
     MULTI_SYMBOLS = {
         "==": TokenKind.EQUAL_EQUAL,
         "!=": TokenKind.NOT_EQUAL,
@@ -149,7 +150,7 @@ class Lexer:
         else:
             self.column += 1
         return char
-    
+        
     # Função para pular espaços, quebras e comentários
     def skip_space_comments(self) -> None:
         while not self.position >= len(self.source):
@@ -187,8 +188,135 @@ class Lexer:
     
     def tokens(self) -> Iterator[Token]:
         """Produza todos os tokens significativos e um único EOF ao final."""
-        raise NotImplementedError("implemente o analisador léxico")
-        yield  # mantém este método como gerador durante o desenvolvimento
+        while True:
+            self.skip_space_comments()
+            
+            if self.position >= len(self.source):
+                yield Token(TokenKind.EOF, "", None, self.line, self.column)
+                return
+            
+            line_start = self.line
+            column_start = self.column
+            position_start = self.position
+            
+            current = self.peek()
+            
+            if current.isascii() and (current.isalpha() or current == "_"):
+                yield self.scan_identifier(line_start, column_start, position_start)
+                continue
+
+            if current.isascii() and current.isdigit():
+                yield self.scan_number(line_start, column_start, position_start)
+                continue
+
+            if current == '"':
+                yield self.scan_string(line_start, column_start, position_start)
+                continue
+
+            two_char = current + self.peek_next()
+            if two_char in self.MULTI_SYMBOLS:
+                kind = self.MULTI_SYMBOLS[two_char]
+                self.advance()
+                self.advance()
+                yield Token(kind, two_char, None, line_start, column_start)
+                continue
+
+            if current in self.SIMPLE_SYMBOLS:
+                kind = self.SIMPLE_SYMBOLS[current]
+                self.advance()
+                yield Token(kind, current, None, line_start, column_start)
+                continue
+
+            raise LexerError(f"caractere invalido {current!r}", line_start, column_start)
+        
+    #     
+    def scan_ascii(self, char: str) -> bool:
+        return char.isascii() and (char.isalnum() or char == "_")
+    
+    # 
+    def scan_identifier(self, line_start: int, column_start: int, position_start: int):
+        while self.scan_ascii(self.peek()):
+            self.advance()
+
+        lexeme = self.source[position_start:self.position]
+
+        if lexeme in self.KEYWORDS:
+            kind = self.KEYWORDS[lexeme]
+            if kind == TokenKind.KW_TRUE:
+                value = True
+            elif kind == TokenKind.KW_FALSE:
+                value = False
+            else:
+                value = None
+        else:
+            kind = TokenKind.IDENTIFIER
+            value = lexeme
+
+        return Token(kind, lexeme, value, line_start, column_start)
+    
+    # 
+    def scan_number(self, line_start: int, column_start: int, position_start: int):
+        while self.peek().isascii() and self.peek().isdigit():
+            self.advance()
+
+        lexeme = self.source[position_start:self.position]
+        value = int(lexeme)  # Python int tem precisao arbitraria, cobre > 2**63-1
+        return Token(TokenKind.INT_LITERAL, lexeme, value, line_start, column_start)
+
+    # 
+    def scan_string(self, line_start: int, column_start: int, position_start: int):
+        self.advance()  # consome a aspa de abertura
+
+        decoded = []
+        while True:
+            if self.position >= len(self.source):
+                # EOF antes de fechar: posicao reportada e a da aspa de abertura
+                raise LexerError("string nao terminada", line_start, column_start)
+
+            char = self.peek()
+
+            if char == '"':
+                self.advance()
+                break
+
+            if char == "\n":
+                # quebra de linha dentro de string: posicao e a da propria quebra
+                raise LexerError("quebra de linha em string", self.line, self.column)
+
+            if not char.isascii():
+                raise LexerError(f"caractere invalido {char!r}", self.line, self.column)
+
+            if char == "\\":
+                backslash_line = self.line
+                backslash_column = self.column
+                self.advance()
+
+                if self.position >= len(self.source):
+                    raise LexerError("string nao terminada", line_start, column_start)
+
+                escape_char = self.peek()
+                if escape_char == "n":
+                    decoded.append("\n")
+                elif escape_char == "t":
+                    decoded.append("\t")
+                elif escape_char == '"':
+                    decoded.append('"')
+                elif escape_char == "\\":
+                    decoded.append("\\")
+                else:
+                    # posicao do erro de escape invalido e a da propria barra
+                    raise LexerError(
+                        "sequencia de escape invalida", backslash_line, backslash_column
+                    )
+                self.advance()
+                continue
+
+            decoded.append(char)
+            self.advance()
+
+        lexeme = self.source[position_start:self.position]
+        value = "".join(decoded)
+        return Token(TokenKind.STRING_LITERAL, lexeme, value, line_start, column_start)
 
     def scan(self) -> list[Token]:
         return list(self.tokens())
