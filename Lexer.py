@@ -229,11 +229,11 @@ class Lexer:
 
             raise LexerError(f"Caracter inválido {current!r}", line_start, column_start)
         
-    #     
+    # Verifica se o caractere pode continuar um identificador (letra, dígito ou _), sempre ASCII    
     def scan_ascii(self, char: str) -> bool:
         return char.isascii() and (char.isalnum() or char == "_")
     
-    # 
+    # Reconhece um identificador ou palavra reservada, a partir do primeiro caractere já confirmado
     def scan_identifier(self, line_start: int, column_start: int, position_start: int):
         while self.scan_ascii(self.peek()):
             self.advance()
@@ -254,7 +254,7 @@ class Lexer:
 
         return Token(kind, lexeme, value, line_start, column_start)
     
-    # 
+    # Reconhece um literal inteiro (somente dígitos decimais)
     def scan_number(self, line_start: int, column_start: int, position_start: int):
         while self.peek().isascii() and self.peek().isdigit():
             self.advance()
@@ -263,7 +263,7 @@ class Lexer:
         value = int(lexeme)  # Python int tem precisao arbitraria, cobre > 2**63-1
         return Token(TokenKind.INT_LITERAL, lexeme, value, line_start, column_start)
 
-    # 
+    # Reconhece um literal de string, decodificando as sequências de escape suportadas
     def scan_string(self, line_start: int, column_start: int, position_start: int):
         self.advance()  # consome a aspa de abertura
 
