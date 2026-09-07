@@ -78,7 +78,7 @@ class LexerError(Exception):
 class Lexer:
     """Converte texto-fonte MicroC em uma sequência de tokens."""
     # tabela de palavras reservadas da linguagem
-    PALAVRAS_RESERVADAS = {
+    KEYWORDS = {
         "int": TokenKind.KW_INT,
         "bool": TokenKind.KW_BOOL,
         "void": TokenKind.KW_VOID,
@@ -92,7 +92,7 @@ class Lexer:
     }
 
     # símbolos que sempre formam um token sozinhos (1 caractere)
-    SIMBOLOS_SIMPLES = {
+    SIMPLE_SYMBOLS = {
         "+": TokenKind.PLUS,
         "-": TokenKind.MINUS,
         "*": TokenKind.STAR,
@@ -110,7 +110,7 @@ class Lexer:
         "=": TokenKind.ASSIGN,
     }
     
-    SIMBOLOS_COMPOSTOS = {
+    MULTI_SYMBOLS = {
         "==": TokenKind.EQUAL_EQUAL,
         "!=": TokenKind.NOT_EQUAL,
         "<=": TokenKind.LESS_EQUAL,
@@ -119,10 +119,37 @@ class Lexer:
         "||": TokenKind.LOGICAL_OR,
     }
     
+    # Inicialização: mostra posição atual, linha atual e coluna atual.
     def __init__(self, source: str):
         self.source = source
-        # TODO: inicialize aqui o estado exigido por sua estratégia.
-
+        self.position = 0
+        self.line = 1
+        self.column = 1
+        
+    # Olha o caracter atual sem consumir
+    def peek(self) -> str:
+        if self.position >= len(self.source):
+            return ""
+        return self.source[self.position]
+    
+    # Olha o caracter na posição a frente sem consumir
+    def peek_next(self) -> str:
+        next_position = self.position + 1
+        if next_position >= len(self.source):
+            return ""
+        return self.source[next_position]
+    
+    # Consome um caracter e avança para o próximo
+    def advance(self) -> str:
+        char = self.source[self.position]
+        self.position += 1
+        if char == "\n":
+            self.line += 1
+            self.column = 1
+        else:
+            self.column += 1
+        return char
+    
     def tokens(self) -> Iterator[Token]:
         """Produza todos os tokens significativos e um único EOF ao final."""
         raise NotImplementedError("implemente o analisador léxico")
